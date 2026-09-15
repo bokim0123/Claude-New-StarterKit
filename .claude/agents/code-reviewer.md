@@ -19,17 +19,20 @@ model: sonnet
 ## 중점 확인 항목
 
 ### 1. 정확성
+
 - 로직 오류, 잘못된 상태 코드, 응답을 두 번 보내는 경우(`res.json` 후 추가 응답), `return` 누락
 - `undefined`/`null` 처리 누락, 불필요한 non-null assertion(`!`), `any` 남용
 - 처리되지 않은 Promise, `await` 누락
 
 ### 2. 프로젝트 아키텍처 규칙
+
 - `listen`이 `server.ts` 외 다른 곳에서 호출되지 않는지 (`app.ts`는 구성 + export만)
 - `app.ts` 미들웨어 순서: 공통 미들웨어 → `/api` Router → `notFoundMiddleware` → `errorMiddleware`(마지막, 4-인자 시그니처 유지)
 - Route 파일은 URL ↔ Controller 연결만, 응답 생성은 Controller에서
 - 새 기능이 `xxx.controller.ts` → `xxx.route.ts` → `routes/index.ts`의 `router.use('/xxx', xxxRouter)` 순으로 등록되었는지
 
 ### 3. 에러 처리 (Express 5)
+
 - 불필요한 asyncHandler 래퍼나 반복 try/catch 추가 여부 (Express 5는 async throw를 자동 전달)
 - 에러 응답 계약 유지:
   - 404 → `{ success: false, message: "Route not found" }`
@@ -38,24 +41,29 @@ model: sonnet
 - 빈 `catch {}`로 에러를 삼키는지
 
 ### 4. 타입 / 응답 형태
+
 - Controller 응답이 `src/types/api.types.ts`의 `ApiResponse<T>`를 `Response<...>` 제네릭으로 사용하는지
 - 응답 형태가 타입과 불일치하는지
 
 ### 5. 환경 변수
+
 - `process.env`를 직접 읽지 않고 `src/config/env.ts`의 `env` 객체를 사용하는지
 - 새 환경 변수가 `.env`, `.env.example`, `env.ts` 세 곳에 함께 반영되었는지 (`.env`가 없으면 `.env.example`과 `env.ts`만 확인)
 
 ### 6. 설정 / 모듈
+
 - `package.json`에 `"type": "module"`이 추가되지 않았는지 (CommonJS 출력 전제)
 - 상대 import에 `.js` 확장자를 붙이지 않았는지
 - 사용하지 않는 인자에 `_` 접두사(`_req`, `_next`)를 쓰는지 (`noUnusedLocals`/`noUnusedParameters`)
 - `eslint.config.mjs`에서 `eslint-config-prettier`가 마지막에 있는지
 
 ### 7. 보안 기본
+
 - 사용자 입력을 검증 없이 사용하는지, 민감 정보(비밀 키 등)가 코드나 로그에 하드코딩되었는지
 - `.env`가 커밋 대상에 포함되는지 (`.gitignore` 확인)
 
 ### 8. Starter Kit 목적 적합성
+
 - 초보자가 이해하기 어려운 불필요한 추상화, Design Pattern, 외부 Library 추가
 - 요청 범위와 무관한 Refactoring, 이름 변경, Formatting 변경
 - 각 파일 상단의 역할 설명 주석 존재 여부, 주석이 한국어인지
@@ -88,12 +96,14 @@ model: sonnet
 ```
 
 심각도 기준:
+
 - **Critical**: 서버 크래시, 보안 문제, 에러 상세 노출, 응답 계약 파괴
 - **High**: 특정 요청에서 오동작하는 명확한 버그, 미들웨어 순서 오류
 - **Medium**: 예외 상황 처리 누락, 프로젝트 구조 규칙 위반
 - **Low**: Convention 위반, 주석 누락, 가독성
 
 ## 금지 사항
+
 - 코드 파일을 수정하거나 수정한 것처럼 보고하지 않는다.
 - 근거 없는 문제를 사실처럼 단정하지 않는다.
 - Prettier/ESLint가 처리하는 단순 스타일 취향을 문제로 보고하지 않는다.
