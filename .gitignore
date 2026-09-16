@@ -28,3 +28,7 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code 개인 설정 (Windows 전용 알림 hook)
+.claude/settings.local.json
+.claude/notify.ps1
