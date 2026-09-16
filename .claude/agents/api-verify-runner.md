@@ -80,6 +80,14 @@ curl -s -w "\nHTTP=%{http_code}\n" -X POST -H "Content-Type: application/json" \
 echo "--- 서버 콘솔 로그"
 cat "$LOG"
 rm -f "$LOG"
+
+# 종료 확인 (trap으로도 정리되지만, 보고에 쓸 근거를 같은 호출 안에서 남긴다)
+cleanup
+SERVER_PID=""
+sleep 1
+curl -s -m 2 -o /dev/null "http://127.0.0.1:$PORT/api/health" \
+  && echo "경고: 서버가 아직 응답함 (PORT=$PORT)" \
+  || echo "서버 종료 확인됨"
 ```
 
 ### 3단계: 계약 대조
@@ -108,11 +116,9 @@ rm -f "$LOG"
 
 ### 5단계: 종료 확인
 
-보고 전에 서버 프로세스가 실제로 정리되었는지 확인하고, 그 결과를 보고에 명시한다.
+종료 확인은 2단계 스크립트 마지막에 포함되어 있다. 스크립트가 출력한 `서버 종료 확인됨` 또는 `경고: 서버가 아직 응답함`을 그대로 보고에 옮긴다. 별도의 확인 명령을 새로 짜 붙일 필요가 없다.
 
-```bash
-curl -s -m 2 -o /dev/null "http://127.0.0.1:<PORT>/api/health" || echo "서버 종료 확인됨"
-```
+`경고: 서버가 아직 응답함`이 나오면 프로세스가 남은 것이다. 이때는 포트 번호와 함께 보고하고, 사용자에게 수동 종료(`taskkill //PID <pid> //F`)를 안내한다.
 
 ## 보고 형식
 
