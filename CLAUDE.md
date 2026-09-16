@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 새 백엔드 API 프로젝트를 시작할 때 복사해서 쓰는 **재사용용 Starter Kit** (Node.js + Express 5 + TypeScript).
 초보자도 이해하기 쉬운 단순한 구조를 유지하는 것이 목적이므로, 불필요한 추상화·패턴·라이브러리를 추가하지 않는다.
+**백엔드 전용** 저장소다 (Next.js / React 등 프런트엔드 런타임 없음). Node.js >= 20 (`package.json`의 `engines`).
 
 ## 명령어
 
@@ -30,11 +31,13 @@ npx prettier --check .
 ## 이 저장소의 Claude Code 자산
 
 - **`code-reviewer` 에이전트** — 읽기 전용 코드 리뷰 (버그, 응답 계약 위반, 미들웨어 순서, Convention 위반)
-- **`api-verify-runner` 에이전트** — 위 검증 절차를 실제로 실행한다. build / lint / format 후 서버를 기동해 응답 계약 3종을 실측 대조하고 프로세스까지 정리한다. 수동으로 스크립트를 짜기 전에 이 에이전트를 먼저 고려한다.
+- **`api-verify-runner` 에이전트** — 위 검증 절차 전체를 실행하고 서버 프로세스까지 정리한다. 수동으로 스크립트를 짜기 전에 이 에이전트를 먼저 고려한다.
 - **`/add-component` 커맨드** — `src/components/`에 React 컴포넌트를 생성한다 ("설정상 주의점" 참고).
 - **`docs/`** — 리뷰 결과 등 산출물 문서를 날짜가 들어간 파일명으로 보관한다 (예: `docs/code-review-2026-09-15.md`).
+- **`.mcp.json`** — 프로젝트 MCP 서버: `context7`(라이브러리 문서), `playwright`(브라우저), `sequential-thinking`, `shadcn`.
 - `.claude/settings.local.json`, `.claude/notify.ps1`, `.claude/verify-on-stop.ps1`은 `.gitignore` 대상인 개인 설정(권한, Windows 전용 hook)이다. 커밋하지 않는다.
   - `notify.ps1`은 Notification / Stop 시 Windows 토스트 알림을 띄우고 `.claude/logs/notify-yyyyMMdd.log`에 기록한다 (`logs/`도 `.gitignore` 대상). `settings.local.json`에서 등록하며 항상 exit 0으로 끝난다.
+  - `verify-on-stop.ps1`은 파일만 있고 현재 `settings.local.json`에 hook으로 등록되어 있지 않다.
 
 ## 아키텍처
 
@@ -56,7 +59,7 @@ npx prettier --check .
 - **TypeScript 6 + `module: nodenext`**, `package.json`에 `"type"` 없음 → CommonJS로 출력되며 상대 import에 `.js` 확장자를 붙이지 않는다. `"type": "module"`을 추가하면 모든 import 경로가 깨지므로 주의.
 - `tsconfig`에 `noUnusedLocals`/`noUnusedParameters`가 켜져 있다. 사용하지 않는 인자는 `_` 접두사(`_req`, `_next`)로 표기하며 ESLint도 이를 허용하도록 설정됨. `noImplicitReturns`/`noFallthroughCasesInSwitch`도 켜져 있다.
 - ESLint 10 flat config(`eslint.config.mjs`), `eslint-config-prettier`는 항상 마지막에 둔다.
-- Prettier 설정(`.prettierrc`): `singleQuote`, `semi`, `trailingComma: "all"`, `printWidth: 100`, `tabWidth: 2`. 새 코드는 처음부터 이 스타일로 작성한다.
+- Prettier 설정(`.prettierrc`): `singleQuote`, `semi`, `trailingComma: "all"`, `printWidth: 100`, `tabWidth: 2`, `endOfLine: "auto"`. 새 코드는 처음부터 이 스타일로 작성한다.
 - **`src/components/*.tsx`는 현재 빌드되지 않는다**: `tsconfig`의 `include`가 `src/**/*.ts`이고 `jsx` 옵션도 `react` 의존성도 없으며 `types`가 `["node"]`로 제한되어 DOM 타입도 없다. 이 저장소는 백엔드 전용이며 `/add-component`로 만든 컴포넌트는 참고용 산출물이다. `npm run build`가 통과하더라도 컴파일된 것이 아니다. 실제로 쓰려면 `react`·`@types/react` 설치와 `jsx`·`include`·`types` 설정 변경이 함께 필요하다.
 - `src/utils/`는 `.gitkeep`만 있는 빈 디렉터리다. 공통 유틸이 생기면 여기에 둔다.
 - 코드 주석·문서·커밋 메시지는 한국어, 각 파일 상단에 역할 설명 주석을 둔다.
