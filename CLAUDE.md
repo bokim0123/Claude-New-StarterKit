@@ -34,7 +34,7 @@ npx prettier --check .
 - **`api-verify-runner` 에이전트** — 위 검증 절차 전체를 실행하고 서버 프로세스까지 정리한다. 수동으로 스크립트를 짜기 전에 이 에이전트를 먼저 고려한다.
 - **`/add-component` 커맨드** — `src/components/`에 React 컴포넌트를 생성한다 ("설정상 주의점" 참고).
 - **`docs/`** — 리뷰 결과 등 산출물 문서를 날짜가 들어간 파일명으로 보관한다 (예: `docs/code-review-2026-09-15.md`).
-- **`.mcp.json`** — 프로젝트 MCP 서버: `context7`(라이브러리 문서), `playwright`(브라우저), `sequential-thinking`, `shadcn`.
+- **`.mcp.json`** — 프로젝트 MCP 서버: `context7`(라이브러리 문서), `sequential-thinking`. 백엔드 전용이므로 UI용 서버(shadcn, playwright)는 두지 않는다.
 - `.claude/settings.local.json`, `.claude/notify.ps1`, `.claude/verify-on-stop.ps1`은 `.gitignore` 대상인 개인 설정(권한, Windows 전용 hook)이다. 커밋하지 않는다.
   - `notify.ps1`은 Notification / Stop 시 Windows 토스트 알림을 띄우고 `.claude/logs/notify-yyyyMMdd.log`에 기록한다 (`logs/`도 `.gitignore` 대상). `settings.local.json`에서 등록하며 항상 exit 0으로 끝난다.
   - `verify-on-stop.ps1`은 파일만 있고 현재 `settings.local.json`에 hook으로 등록되어 있지 않다.
