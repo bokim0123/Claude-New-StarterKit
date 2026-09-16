@@ -23,7 +23,7 @@ npx prettier --check .
 ```
 
 - 테스트 프레임워크는 아직 없다. 변경 후 검증은 `npm run build` + `npm run lint` + `npx prettier --check .` 통과, 그리고 서버를 띄워 `GET /api/health`(200), `GET /api/unknown`(404), 잘못된 JSON body로 `POST /api/health`(500)를 확인한다.
-- **Prettier 검사 대상에 문서도 포함된다**: `.prettierignore`가 제외하는 것은 `node_modules`, `dist`, `package-lock.json`뿐이므로 `CLAUDE.md`, `README.md`, `.claude/**/*.md`, `.claude/settings.json`을 수정해도 `npx prettier --check .`가 깨질 수 있다.
+- **Prettier 검사 대상에 문서도 포함된다**: `.prettierignore`가 제외하는 것은 `node_modules`, `dist`, `package-lock.json`뿐이므로 `CLAUDE.md`, `README.md`, `.claude/**/*.md`를 수정해도 `npx prettier --check .`가 깨질 수 있다.
 - 개발 PC의 3000번 포트를 다른 서버가 쓰고 있을 수 있다. 수동 확인 시 `PORT` 환경 변수로 다른 포트를 지정한다 (dotenv는 이미 설정된 환경 변수를 덮어쓰지 않음).
 - 검증용 서버는 `npm run dev`(tsx watch)보다 `PORT=3157 node dist/server.js`가 편하다. watch 프로세스는 종료가 번거롭다. Windows에서는 `kill` 후 `taskkill //PID <pid> //F`까지 해야 확실히 종료된다.
 
@@ -33,11 +33,8 @@ npx prettier --check .
 - **`api-verify-runner` 에이전트** — 위 검증 절차를 실제로 실행한다. build / lint / format 후 서버를 기동해 응답 계약 3종을 실측 대조하고 프로세스까지 정리한다. 수동으로 스크립트를 짜기 전에 이 에이전트를 먼저 고려한다.
 - **`/add-component` 커맨드** — `src/components/`에 React 컴포넌트를 생성한다 ("설정상 주의점" 참고).
 - **`docs/`** — 리뷰 결과 등 산출물 문서를 날짜가 들어간 파일명으로 보관한다 (예: `docs/code-review-2026-09-15.md`).
-- **Slack 알림 hook (공유, 커밋 대상)** — `.claude/settings.json`에 Notification / Stop hook이 등록되어 `.claude/hooks/*.sh`를 실행한다. 스크립트는 `.env`를 `source`해 `SLACK_WEBHOOK_URL`을 읽고 `jq`·`curl`이 필요하다. 설정 방법·주의사항은 `README.md`의 "Claude Code Slack 알림 hook" 참조.
-  - URL이 없으면 hook이 exit 1로 끝나 응답마다 hook 오류가 표시된다. 코드 문제로 오인하지 않는다.
-  - `.sh`는 `.gitattributes`로 LF 고정이다. hook 스크립트를 새로 만들어도 LF를 유지한다.
-  - 같은 hook을 `settings.local.json`에도 등록하면 중복 실행되므로 공유 hook은 `settings.json`에만 둔다.
 - `.claude/settings.local.json`, `.claude/notify.ps1`, `.claude/verify-on-stop.ps1`은 `.gitignore` 대상인 개인 설정(권한, Windows 전용 hook)이다. 커밋하지 않는다.
+  - `notify.ps1`은 Notification / Stop 시 Windows 토스트 알림을 띄우고 `.claude/logs/notify-yyyyMMdd.log`에 기록한다 (`logs/`도 `.gitignore` 대상). `settings.local.json`에서 등록하며 항상 exit 0으로 끝난다.
 
 ## 아키텍처
 
@@ -51,7 +48,7 @@ npx prettier --check .
 - **에러 응답 계약**: 404 → `{ success: false, message: "Route not found" }`, 모든 에러 → 500 `{ success: false, message: "Internal Server Error" }` (상세/stack은 서버 콘솔에만, development일 때만 stack 출력). 응답 형식은 과제 요구사항이므로 임의 변경 금지.
 - **응답 계약은 타입으로 보호되지 않는다**: `ApiResponse.message`가 `string`이므로 `'Route not found'`를 다른 문자열로 바꿔도 build / lint / prettier가 전부 통과한다. 계약 파괴는 **실제 HTTP 응답 본문 대조**로만 잡히므로, 응답 관련 코드를 만졌으면 검증을 건너뛰지 않는다.
 - **응답 타입**: `src/types/api.types.ts`의 `ApiResponse<T>`를 `Response<...>` 제네릭으로 사용해 응답 형태를 타입으로 강제한다. 추가 필드가 필요하면 `HealthResponse extends ApiResponse`처럼 확장 인터페이스를 만든다.
-- **환경 변수**: `process.env`를 직접 읽지 말고 `src/config/env.ts`의 `env` 객체(`port`, `nodeEnv`, `isDevelopment`)를 import. 새 변수 추가 시 `.env`, `.env.example`, `env.ts` 세 곳을 함께 수정. 예외: `SLACK_WEBHOOK_URL`은 hook 스크립트 전용이므로 `env.ts`에 넣지 않는다.
+- **환경 변수**: `process.env`를 직접 읽지 말고 `src/config/env.ts`의 `env` 객체(`port`, `nodeEnv`, `isDevelopment`)를 import. 새 변수 추가 시 `.env`, `.env.example`, `env.ts` 세 곳을 함께 수정.
 - **기동 실패 경로가 두 개 있다**: `env.ts`의 `parsePort`는 PORT가 1~65535 정수가 아니면 throw하고(모듈 로드 시점), `parseNodeEnv`는 허용값(`development`/`production`/`test`) 외 값을 조용히 `development`로 처리한다. `server.ts`는 `EADDRINUSE`를 구분해 로그를 남기고 `process.exit(1)` 한다. 검증 중 서버가 즉시 죽으면 이 두 경로를 먼저 확인한다.
 
 ## 설정상 주의점

@@ -44,9 +44,6 @@ Node.js + Express + TypeScript 기반의 **재사용 가능한 백엔드 API Sta
 │  ├─ utils/                      # 공통 유틸 함수 위치 (현재 비어 있음)
 │  ├─ app.ts                      # Express 앱 구성 (미들웨어, Router 등록)
 │  └─ server.ts                   # 서버 실행 진입점 (listen)
-├─ .claude/
-│  ├─ hooks/                      # Claude Code Slack 알림 hook 스크립트
-│  └─ settings.json               # Claude Code 공유 설정 (hook 등록)
 ├─ .gitattributes                 # .sh 파일 LF 개행 고정
 ├─ .env.example                   # 환경 변수 예시 (커밋 대상)
 ├─ .env                           # 실제 환경 변수 (커밋 제외)
@@ -112,14 +109,12 @@ npm start
 ```env
 PORT=3000
 NODE_ENV=development
-SLACK_WEBHOOK_URL=
 ```
 
-| 변수                | 기본값        | 설명                                                                         |
-| ------------------- | ------------- | ---------------------------------------------------------------------------- |
-| `PORT`              | `3000`        | 서버 포트 (1~65535가 아니면 시작 시 에러)                                    |
-| `NODE_ENV`          | `development` | `development` / `production` / `test`                                        |
-| `SLACK_WEBHOOK_URL` | (없음)        | Claude Code 알림 hook 전용 Slack Webhook URL (서버 코드에서는 사용하지 않음) |
+| 변수       | 기본값        | 설명                                      |
+| ---------- | ------------- | ----------------------------------------- |
+| `PORT`     | `3000`        | 서버 포트 (1~65535가 아니면 시작 시 에러) |
+| `NODE_ENV` | `development` | `development` / `production` / `test`     |
 
 코드에서는 `process.env` 대신 `env` 객체를 사용합니다.
 
@@ -130,7 +125,6 @@ console.log(env.port, env.nodeEnv, env.isDevelopment);
 ```
 
 > 새 환경 변수를 추가할 때는 `.env`, `.env.example`, `src/config/env.ts` 세 곳을 함께 수정하세요.
-> 단, `SLACK_WEBHOOK_URL`은 hook 스크립트만 읽으므로 `env.ts`에 추가하지 않습니다.
 
 ---
 
@@ -239,46 +233,12 @@ curl http://localhost:3000/api/users
 
 ---
 
-## Claude Code Slack 알림 hook
-
-이 저장소를 Claude Code로 열면 `.claude/settings.json`에 등록된 hook이 자동으로 실행되어 Slack으로 알림을 보냅니다.
-
-| 이벤트         | 스크립트                             | 알림 시점                    |
-| -------------- | ------------------------------------ | ---------------------------- |
-| `Notification` | `.claude/hooks/notification-hook.sh` | 권한 요청 / 사용자 입력 대기 |
-| `Stop`         | `.claude/hooks/stop-hook.sh`         | Claude 응답 완료             |
-
-### 필요 조건
-
-- `bash` (Windows는 Git Bash), `curl`, `jq`
-  - Windows에서 `jq` 설치 예: `winget install jqlang.jq`
-- `.env`에 `SLACK_WEBHOOK_URL` 설정 (Slack Incoming Webhook URL)
-
-> 조건이 갖춰지지 않으면 Claude 응답이 끝날 때마다 hook 오류가 표시됩니다.
-> 알림이 필요 없으면 `.claude/settings.json`의 `hooks` 항목을 삭제하세요.
-
-### 확인 방법
-
-1. `.env`에 `SLACK_WEBHOOK_URL`을 설정합니다.
-2. Claude Code를 재시작한 뒤 `/hooks`에서 두 hook이 Project 설정으로 등록되어 있는지 확인합니다.
-3. 아무 요청이나 보내 응답 완료 시 Slack에 "작업 완료 알림"이 오는지 확인합니다.
-
-### 주의사항
-
-- hook 스크립트는 `.env`를 `source`로 읽습니다. `.env`가 CRLF 개행이면 URL 끝에 `\r`이 붙어 전송이 실패하므로 LF로 저장하세요.
-- `.sh` 파일은 `.gitattributes`로 LF 개행이 고정되어 있습니다. CRLF로 바뀌면 bash 실행 오류가 발생합니다.
-- `.env`의 다른 값도 셸 문법으로 해석되므로 공백이 들어간 값은 따옴표로 감싸세요.
-- 개인 전용 hook은 `.claude/settings.local.json`(커밋 제외)에 등록합니다. 같은 hook을 두 파일에 모두 등록하지 마세요.
-
----
-
 ## 다른 프로젝트에서 재사용하는 방법
 
 1. 이 폴더를 새 프로젝트 이름으로 복사합니다. (`node_modules`, `dist`, `.env`는 제외)
 2. `package.json`의 `name`, `description`, `version`을 수정합니다.
 3. `npm install` 실행
 4. `.env.example`을 복사해 `.env`를 만들고 값을 설정합니다.
-5. Slack 알림 hook을 쓰지 않으면 `.claude/settings.json`의 `hooks` 항목을 삭제합니다. (위의 "Claude Code Slack 알림 hook" 참고)
-6. `npm run dev`로 `/api/health` 동작을 확인합니다.
-7. 위의 "새로운 Router / Controller 추가 방법"대로 기능을 추가합니다.
-8. 새 Git 저장소로 시작하려면 `git init` 후 첫 커밋을 합니다.
+5. `npm run dev`로 `/api/health` 동작을 확인합니다.
+6. 위의 "새로운 Router / Controller 추가 방법"대로 기능을 추가합니다.
+7. 새 Git 저장소로 시작하려면 `git init` 후 첫 커밋을 합니다.
